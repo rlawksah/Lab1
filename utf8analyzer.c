@@ -140,6 +140,44 @@ char is_animal_emoji_at(char str[], int32_t cpi)
     return 0;
 }
 
+void next_utf8_char(char str[], int32_t cpi, char result[]) 
+{
+    int32_t codepoint = codepoint_at(str, cpi);
+    if (codepoint == -1) 
+    {
+        result[0] = '\0';
+        return;
+    }
+
+    int32_t next_codepoint = codepoint + 1;
+        if (next_codepoint <= 0x7F) {
+        // 1-byte sequence (ASCII)
+        result[0] = next_codepoint;
+        result[1] = '\0';
+    } else if (next_codepoint <= 0x7FF) {
+        // 2-byte sequence
+        result[0] = 0xC0 | ((next_codepoint >> 6) & 0x1F);  // First byte: 110xxxxx
+        result[1] = 0x80 | (next_codepoint & 0x3F);          // Second byte: 10xxxxxx
+        result[2] = '\0';
+    } else if (next_codepoint <= 0xFFFF) {
+        // 3-byte sequence
+        result[0] = 0xE0 | ((next_codepoint >> 12) & 0x0F);  // First byte: 1110xxxx
+        result[1] = 0x80 | ((next_codepoint >> 6) & 0x3F);   // Second byte: 10xxxxxx
+        result[2] = 0x80 | (next_codepoint & 0x3F);          // Third byte: 10xxxxxx
+        result[3] = '\0';
+    } else if (next_codepoint <= 0x10FFFF) {
+        // 4-byte sequence
+        result[0] = 0xF0 | ((next_codepoint >> 18) & 0x07);  // First byte: 11110xxx
+        result[1] = 0x80 | ((next_codepoint >> 12) & 0x3F);  // Second byte: 10xxxxxx
+        result[2] = 0x80 | ((next_codepoint >> 6) & 0x3F);   // Third byte: 10xxxxxx
+        result[3] = 0x80 | (next_codepoint & 0x3F);          // Fourth byte: 10xxxxxx
+        result[4] = '\0';
+    } else {
+        result[0] = '\0';
+    }
+}
+
+
 int main() 
 {
     char str[256];
@@ -191,6 +229,11 @@ int main()
         }
     }
     printf("\n");
+
+
+    int idx = 3;
+    next_utf8_char(str, idx, result);
+    printf("Next Character of Codepoint at Index 3: %s\n", result);
 
     return 0;
 }
