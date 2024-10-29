@@ -188,7 +188,9 @@ int main()
     printf("Uppercased ASCII: \"%s\"\n", str);
     
     printf("Length in bytes: %lu\n", strlen(str));
-    printf("Number of code points: %d\n", utf8_strlen(str));
+
+    int32_t num_code_points = utf8_strlen(str);
+    printf("Number of code points: %d\n", num_code_points);
     
     printf("Bytes per code point: ");
     for (int i = 0; str[i] != '\0';) 
@@ -204,14 +206,14 @@ int main()
     printf("Substring of the first 6 code points: \"%s\"\n", result);
     
     printf("Code points as decimal numbers: ");
-    for (int i = 0; i < utf8_strlen(original_str); i++) 
+    for (int i = 0; i < num_code_points; i++) 
     {
         printf("%d ", codepoint_at(original_str, i));
     }
     printf("\n");
     
     printf("Animal emojis: ");
-    for (int i = 0; i < utf8_strlen(str); i++) 
+    for (int i = 0; i < num_code_points; i++) 
     {
         if (is_animal_emoji_at(str, i)) 
         {
@@ -225,10 +227,14 @@ int main()
     }
     printf("\n");
 
-
-    int idx = 3;
-    next_utf8_char(str, idx, result);
-    printf("Next Character of Codepoint at Index 3: %s\n", result);
+    if (num_code_points > 3) 
+    {
+        int idx = 3;
+        char next_char_result[5];
+        next_utf8_char(str, idx, next_char_result);
+        printf("Next Character of Codepoint at Index 3: %s\n", next_char_result);
+    }
 
     return 0;
 }
+
