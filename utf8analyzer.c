@@ -123,18 +123,18 @@ int32_t codepoint_at(char str[], int32_t cpi)
 
     if (width == 2) 
     {
-        return ((codepoint[0] & 0x1F) << 6) + (codepoint[1] & 0x3F);
+        return ((codepoint[0] & 0b00011111) << 6 | (codepoint[1] & 0x3F));
     }
     if (width == 3) 
     {
-        return ((codepoint[0] & 0x0F) << 12) + ((codepoint[1] & 0x3F) << 6) + (codepoint[2] & 0x3F);
+        return ((codepoint[0] & 0b00001111) << 12 | (codepoint[1] & 0x3F) << 6| (codepoint[2] & 0x3F));
     }
     if (width == 4) 
     {
-        return ((codepoint[0] & 0x07) << 18) + ((codepoint[1] & 0x3F) << 12) + ((codepoint[2] & 0x3F) << 6) + (codepoint[3] & 0x3F);
+        return ((codepoint[0] & 0b00000111) << 18 | (codepoint[1] & 0x3F) << 12 | (codepoint[2] & 0x3F) << 6 | (codepoint[3] & 0x3F)) ;
     }
-
     return -1;
+
 }
 
 char is_animal_emoji_at(char str[], int32_t cpi) 
@@ -157,18 +157,35 @@ void next_utf8_char(char str[], int32_t cpi, char result[])
         return;
     }
 
-    int32_t next_codepoint = codepoint + 1;
-    if (next_codepoint <= 0x10FFFF) 
+int32_t next_codepoint = codepoint + 1;
+
+    if (next_codepoint <= 0x7F) 
     {
-        result[0] = 0xF0 | ((next_codepoint >> 18) & 0x07);
+        result[0] = next_codepoint;
+        result[1] = '\0';
+    } else if (next_codepoint <= 0x7FF) 
+    {
+        result[0] = 0xC0 | (next_codepoint >> 6);
+        result[1] = 0x80 | (next_codepoint & 0x3F);
+        result[2] = '\0';
+    } else if (next_codepoint <= 0xFFFF) 
+    {
+        result[0] = 0xE0 | (next_codepoint >> 12);
+        result[1] = 0x80 | ((next_codepoint >> 6) & 0x3F);
+        result[2] = 0x80 | (next_codepoint & 0x3F);
+        result[3] = '\0';
+    } else if (next_codepoint <= 0x10FFFF) 
+    {
+        result[0] = 0xF0 | (next_codepoint >> 18);
         result[1] = 0x80 | ((next_codepoint >> 12) & 0x3F);
         result[2] = 0x80 | ((next_codepoint >> 6) & 0x3F);
         result[3] = 0x80 | (next_codepoint & 0x3F);
         result[4] = '\0';
     } else 
     {
-        result[0] = '\0';
+        result[0] = '\0'; 
     }
+
 }
 
 
