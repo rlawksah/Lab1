@@ -17,13 +17,16 @@ int32_t is_ascii(char str[])
 
 int32_t capitalize_ascii(char str[]) 
 {
+    uint32_t index = 0;
     int32_t count = 0;
-    for (int i = 0; str[i] != '\0'; i++) 
+    while (str[index] != 0) 
     {
-        if (islower(str[i])) {
-            str[i] = toupper(str[i]);
+        if (str[index] >= 'a' && str[index] <= 'z') 
+        {
+            str[index] -= 32;
             count++;
         }
+        index += 1;
     }
     return count;
 }
@@ -31,21 +34,23 @@ int32_t capitalize_ascii(char str[])
 int32_t width_from_start_byte(char start_byte) 
 {
     unsigned char byte = (unsigned char)start_byte;
-    if ((byte >> 7) == 0) 
+    if (byte < 0x80) 
     {
         return 1;
-    } else if ((byte >> 5) == 0b110) 
+    }
+    else if (byte >= 0xC0 && byte <= 0xDF) 
     {
         return 2;
-    } else if ((byte >> 4) == 0b1110) 
+    }
+    else if (byte >= 0xE0 && byte <= 0xEF) 
     {
         return 3;
-    } else if ((byte >> 3) == 0b11110) 
+    }
+    else if (byte >= 0xF0 && byte <= 0xF7) 
     {
         return 4;
-    } else {
-        return -1;
     }
+    return -1;
 }
 
 int32_t utf8_strlen(char str[]) 
@@ -106,30 +111,32 @@ void utf8_substring(char str[], int32_t cpi_start, int32_t cpi_end, char result[
 
 int32_t codepoint_at(char str[], int32_t cpi) 
 {
-    int32_t byte_idx = codepoint_index_to_byte_index(str, cpi);
-    if (byte_idx == -1) 
+    int byte_index = codepoint_index_to_byte_index(str, cpi);
+    char *codepoint = (str + byte_index); 
+
+    int width = width_from_start_byte(codepoint[0]);
+
+    if (width == 1) 
     {
-        return -1;
+        return codepoint[0];
     }
-    unsigned char byte = (unsigned char)str[byte_idx];
-    int32_t codepoint = -1;
-    if ((byte >> 7) == 0) 
+
+    if (width == 2) 
     {
-        codepoint = byte;
-    } else if ((byte >> 5) == 0b110) 
-    {
-        codepoint = ((byte & 0b00011111) << 6) | ((unsigned char)str[byte_idx + 1] & 0b00111111);
-    } else if ((byte >> 4) == 0b1110) 
-    {
-        codepoint = ((byte & 0b00001111) << 12) | (((unsigned char)str[byte_idx + 1] & 0b00111111) << 6) | ((unsigned char)str[byte_idx + 2] & 0b00111111);
-    } else if ((byte >> 3) == 0b11110) 
-    {
-        codepoint = ((byte & 0b00000111) << 18) | (((unsigned char)str[byte_idx + 1] & 0b00111111) << 12) | (((unsigned char)str[byte_idx + 2] & 0b00111111) << 6) | ((unsigned char)str[byte_idx + 3] & 0b00111111);
-    } else {
-        return -1;
+        return ((codepoint[0] & 0x1F) << 6) + (codepoint[1] & 0x3F);
     }
-    return codepoint;
+    if (width == 3) 
+    {
+        return ((codepoint[0] & 0x0F) << 12) + ((codepoint[1] & 0x3F) << 6) + (codepoint[2] & 0x3F);
+    }
+    if (width == 4) 
+    {
+        return ((codepoint[0] & 0x07) << 18) + ((codepoint[1] & 0x3F) << 12) + ((codepoint[2] & 0x3F) << 6) + (codepoint[3] & 0x3F);
+    }
+
+    return -1;
 }
+
 char is_animal_emoji_at(char str[], int32_t cpi) 
 {
     int32_t codepoint = codepoint_at(str, cpi);
@@ -140,6 +147,7 @@ char is_animal_emoji_at(char str[], int32_t cpi)
     return 0;
 }
 
+// Resubmission requirement
 void next_utf8_char(char str[], int32_t cpi, char result[]) 
 {
     int32_t codepoint = codepoint_at(str, cpi);
@@ -150,32 +158,19 @@ void next_utf8_char(char str[], int32_t cpi, char result[])
     }
 
     int32_t next_codepoint = codepoint + 1;
-        if (next_codepoint <= 0x7F) {
-        // 1-byte sequence (ASCII)
-        result[0] = next_codepoint;
-        result[1] = '\0';
-    } else if (next_codepoint <= 0x7FF) {
-        // 2-byte sequence
-        result[0] = 0xC0 | ((next_codepoint >> 6) & 0x1F);  // First byte: 110xxxxx
-        result[1] = 0x80 | (next_codepoint & 0x3F);          // Second byte: 10xxxxxx
-        result[2] = '\0';
-    } else if (next_codepoint <= 0xFFFF) {
-        // 3-byte sequence
-        result[0] = 0xE0 | ((next_codepoint >> 12) & 0x0F);  // First byte: 1110xxxx
-        result[1] = 0x80 | ((next_codepoint >> 6) & 0x3F);   // Second byte: 10xxxxxx
-        result[2] = 0x80 | (next_codepoint & 0x3F);          // Third byte: 10xxxxxx
-        result[3] = '\0';
-    } else if (next_codepoint <= 0x10FFFF) {
-        // 4-byte sequence
-        result[0] = 0xF0 | ((next_codepoint >> 18) & 0x07);  // First byte: 11110xxx
-        result[1] = 0x80 | ((next_codepoint >> 12) & 0x3F);  // Second byte: 10xxxxxx
-        result[2] = 0x80 | ((next_codepoint >> 6) & 0x3F);   // Third byte: 10xxxxxx
-        result[3] = 0x80 | (next_codepoint & 0x3F);          // Fourth byte: 10xxxxxx
+    if (next_codepoint <= 0x10FFFF) 
+    {
+        result[0] = 0xF0 | ((next_codepoint >> 18) & 0x07);
+        result[1] = 0x80 | ((next_codepoint >> 12) & 0x3F);
+        result[2] = 0x80 | ((next_codepoint >> 6) & 0x3F);
+        result[3] = 0x80 | (next_codepoint & 0x3F);
         result[4] = '\0';
-    } else {
+    } else 
+    {
         result[0] = '\0';
     }
 }
+
 
 
 int main() 
