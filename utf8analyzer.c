@@ -33,20 +33,19 @@ int32_t capitalize_ascii(char str[])
 
 int32_t width_from_start_byte(char start_byte) 
 {
-    unsigned char byte = (unsigned char)start_byte;
-    if (byte < 0x80) 
+    if ((start_byte & 0x80) == 0) 
     {
-        return 1;
+        return 1; 
     }
-    else if (byte >= 0xC0 && byte <= 0xDF) 
-    {
+    if ((start_byte & 0b11100000) == 0b11000000) 
+    { 
         return 2;
     }
-    else if (byte >= 0xE0 && byte <= 0xEF) 
+    if ((start_byte & 0b11110000) == 0b11100000) 
     {
         return 3;
     }
-    else if (byte >= 0xF0 && byte <= 0xF7) 
+    if ((start_byte & 0b11111000) == 0b11110000) 
     {
         return 4;
     }
